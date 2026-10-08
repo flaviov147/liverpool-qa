@@ -1,0 +1,11 @@
+# Estrategia de pruebas — Liverpool (1 página)
+
+**Objetivo y alcance.** Comprobar que una búsqueda de `playstation 5`, filtrada por blanco y ordenada por precio ascendente, muestra cinco productos legibles y al menos tres concordantes en nombre y precio con el servicio de catálogo consumido por la página. La comparación registra diferencias y exige un umbral explícito. Separar POM, adaptador de servicio y comparador evita duplicar lógica y facilita mantenimiento.
+
+**¿Qué no automatizaría?** No automatizaría CAPTCHA, promociones externas cambiantes, checkout real ni compra con pago: no forman parte del alcance, añaden costos y riesgos y no prueban el contrato de búsqueda. No comprobaría cada píxel o cada producto del catálogo en este E2E: la presentación completa pertenece a pruebas visuales controladas y la exhaustividad de datos a pruebas de API/contrato.
+
+**¿Qué haría ante un CAPTCHA?** Nunca intentaría evadirlo en producción. Solicitaría al equipo un entorno de QA con CAPTCHA desactivado, claves oficiales de prueba o bypass autorizado y auditable; mantendría pruebas específicas del control de seguridad separadas. Si producción bloquea robots, marcaría la limitación y trasladaría el E2E a un entorno autorizado.
+
+**Riesgos de flakiness y mitigaciones.** Los resultados, stock y precios cambian; la web puede variar por ubicación, sesión, campañas y experimentos A/B. Mitigo con esperas por condiciones de Playwright, aserciones semánticas, comparación contra respuesta capturada durante la misma sesión, sin sleeps fijos, y artefactos de fallos (capturas/trazas). El adaptador rechaza respuestas JSON ajenas al catálogo. La validación de orden exige precios ascendentes y la coincidencia UI/API tolera diferencias de redondeo de 0.01. Los selectores y esquema del servicio deben verificarse frente al sitio real antes de entregar.
+
+**¿Cómo escalaría a CI con 50+ suites?** Etiquetaría smoke/regression, ejecutaría unitarias y smoke en PR, distribuiría E2E en shards con límites de concurrencia, usaría datos aislados y fixtures estables, reportes consolidados y cuarentena temporal con responsable para casos inestables. Evitaría reintentos ilimitados; revisaría métricas de duración y tasa de flakiness. Mantendría la suite crítica de búsqueda en un entorno controlado y las pruebas de producción como monitoreo no bloqueante si existe anti-bot.

@@ -1,0 +1,17 @@
+{
+  "name": "liverpool-qa-challenge",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "playwright test --project=chromium --grep-invert @unit",
+    "test:headed": "playwright test --project=chromium --headed --grep-invert @unit",
+    "test:unit": "playwright test --project=unit",
+    "test:all": "playwright test",
+    "report": "playwright show-report",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1",
+    "typescript": "5.9.3"
+  }
+}
