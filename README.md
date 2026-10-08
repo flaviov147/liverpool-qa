@@ -1,5 +1,7 @@
 # Liverpool QA Automation — Playwright + TypeScript
 
+![CI](https://github.com/flaviov147/liverpool-qa/actions/workflows/test.yml/badge.svg)
+
 Reto técnico: búsqueda `playstation 5` → color blanco → precio menor a mayor → primeros 5 productos → validación contra respuesta de red (mínimo 3 coincidencias exactas de nombre normalizado y precio ±0.01).
 
 ## Requisitos e instalación
@@ -11,7 +13,9 @@ npm install
 npx playwright install chromium
 npm run typecheck
 npm run test:unit
-npm test
+npm test          # E2E headless (por defecto)
+npm run test:headed   # E2E con navegador visible
+npm run test:all      # unitarias + E2E
 ```
 
 Modo visible: `npm run test:headed`. Reporte: `npm run report`. Búsqueda parametrizada: `SEARCH_TERM='nintendo switch' npm test` (macOS/Linux), `$env:SEARCH_TERM='nintendo switch'; npm test` (PowerShell). En Windows CMD: `set SEARCH_TERM=nintendo switch && npm test`.
@@ -31,8 +35,13 @@ Modo visible: `npm run test:headed`. Reporte: `npm run report`. Búsqueda parame
 
 ## Estado real y consideraciones
 
-**Este repositorio es una implementación entregable de código, NO una ejecución verde certificada.** Los selectores son candidatos porque no se ha inspeccionado el DOM actual de Liverpool desde un navegador funcional. También debe verificarse la ruta y estructura JSON del servicio real; los sitios pueden variar por región, sesión o anti-bot. El flujo no se considera validado hasta ejecutar `npm test` contra el sitio y ajustar el POM/adaptador. No se ha publicado repositorio ni enviado correo.
+Estado: **probado en local en modo headless** — E2E `1/1` (5/5 coincidencias UI/API) y unitarias `3/3`.
 
-Para entregar: inspeccionar DOM/XHR en DevTools, ajustar selectores/esquema, ejecutar localmente, publicar en GitHub, verificar Actions verde e insertar el enlace a la ejecución aquí.
+Los selectores y el esquema del servicio fueron verificados contra el sitio real (oct. 2026):
 
-**GitHub Actions:** `https://github.com/USUARIO/REPOSITORIO/actions` (reemplazar tras publicar).
+- Endpoint de resultados interceptado: `POST https://www.liverpool.com.mx/api/plp/search` (`data.records`).
+- Tarjeta de producto: `section[data-testid$="-card"]`; nombre `h3`; precio `[data-testid$="-price"]`; filtro color `checkbox "Blanco (76)"`; orden `[data-testid="dropdown-sorting-button"]` → «Menor precio».
+
+**Nota de anti-bot (Akamai):** Liverpool devuelve `403 Access Denied` al headless clásico de Playwright (headless shell). Por eso `playwright.config.ts` usa `channel: 'chromium'` (nuevo modo headless), que sí carga el sitio. Si el sitio cambia o bloquea IP de datacenter, ajusta el POM/adaptador o apunta a un entorno QA autorizado.
+
+**GitHub Actions:** `https://github.com/flaviov147/liverpool-qa/actions`

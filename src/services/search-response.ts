@@ -1,16 +1,17 @@
 import type {Response} from '@playwright/test';
 import {parsePrice,type Product} from '../utils/products';
+/** Liverpool PLP search endpoint; products live in `data.records`. */
+export const SEARCH_ENDPOINT=/\/api\/plp\/search(\?|$)/i;
 /** Schema adapter: only accepts recognized product arrays, not arbitrary JSON objects. */
 export function extractProducts(payload:unknown):Product[]{
  const root=payload as any;
- const paths=[root?.products,root?.results,root?.items,root?.data?.products,root?.data?.results,
-  root?.data?.search?.products,root?.searchResult?.products,root?.productList,
-  root?.response?.products,root?.contents?.[0]?.mainContent?.[0]?.records];
+ const paths=[root?.data?.records,root?.records,root?.data?.products,root?.products,
+  root?.results,root?.items,root?.data?.results];
  const list=paths.find(Array.isArray);
  if(!list)throw new Error('JSON de productos no reconocido: inspeccionar respuesta real y actualizar el adaptador');
- return list.map((raw:any)=>{
-  const item=raw?.product??raw;const name=String(item?.productName??item?.name??item?.displayName??item?.title??'').trim();
-  const value=item?.salePrice??item?.sellingPrice??item?.price?.value??item?.price?.amount??item?.price??item?.listPrice;
+ return list.map((item:any)=>{
+  const name=String(item?.title??item?.productName??item?.name??item?.displayName??'').trim();
+  const value=item?.priceInfo?.salePrice??item?.priceInfo?.promoPrice?.price??item?.priceInfo?.listPrice?.price??item?.salePrice??item?.price;
   const price=parsePrice(typeof value==='string'||typeof value==='number'?value:'');
   return {name,price,id:String(item?.productId??item?.sku??item?.id??'')};
  }).filter((v:Product)=>Boolean(v.name)&&Number.isFinite(v.price));

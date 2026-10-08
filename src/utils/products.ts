@@ -2,7 +2,8 @@ export type Product={name:string;price:number;id?:string};
 export function normalizeName(s:string):string{return s.toLocaleLowerCase('es-MX').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim();}
 export function parsePrice(raw:string|number):number{
  if(typeof raw==='number')return raw;
- const s=raw.replace(/[^\d.,]/g,'');if(!s)return NaN;
+ const match=String(raw).match(/\d[\d.,]*/);if(!match)return NaN;
+ const s=match[0].replace(/[^\d.,]/g,'');if(!s)return NaN;
  const decimal=s.lastIndexOf(',')>s.lastIndexOf('.')?',':'.';
  const n=decimal===','?s.replace(/\./g,'').replace(',','.'):s.replace(/,/g,'');return Number(n);
 }

@@ -5,6 +5,6 @@ export default defineConfig({
  reporter:[['list'],['html',{open:'never',outputFolder:'playwright-report'}]],
  use:{baseURL:process.env.BASE_URL??'https://www.liverpool.com.mx',headless:true,
   trace:'retain-on-failure',screenshot:'only-on-failure',video:'retain-on-failure'},
- projects:[{name:'chromium',testIgnore:'**/unit/**',use:{...devices['Desktop Chrome']}},
+ projects:[{name:'chromium',testIgnore:'**/unit/**',use:{...devices['Desktop Chrome'],channel:'chromium',locale:'es-MX'}},
            {name:'unit',testMatch:'**/unit/**'}]
 });

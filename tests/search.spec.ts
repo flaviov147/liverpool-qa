@@ -1,13 +1,11 @@
 import {test,expect,type Response} from '@playwright/test';
 import {SearchPage} from '../src/pages/search.page';
-import {findSearchProducts} from '../src/services/search-response';
+import {findSearchProducts,SEARCH_ENDPOINT} from '../src/services/search-response';
 import {compareProducts} from '../src/utils/products';
 const term=process.env.SEARCH_TERM??'playstation 5';
 test('Liverpool: búsqueda, color blanco, precio ascendente y validación UI/API',async({page},testInfo)=>{
  const search=new SearchPage(page);const responses:Response[]=[];
- page.on('response',response=>{const type=response.headers()['content-type']??'';
-  if(/json/i.test(type)&&/search|product|catalog|browse|graphql|plp/i.test(response.url()))responses.push(response);
- });
+ page.on('response',response=>{if(SEARCH_ENDPOINT.test(response.url()))responses.push(response);});
  await test.step('Buscar producto',async()=>{await search.open();await search.search(term);});
  await test.step('Filtrar por blanco',async()=>{await search.filterWhite();});
  await test.step('Ordenar de menor a mayor',async()=>{await search.sortLowToHigh();});
@@ -16,6 +14,6 @@ test('Liverpool: búsqueda, color blanco, precio ascendente y validación UI/API
  const {products:api,url}=await test.step('Interpretar respuesta de red',()=>findSearchProducts(responses));
  const comparison=compareProducts(ui,api);console.log(`Servicio: ${url}; coincidencias: ${comparison.matches}/5`);
  comparison.discrepancies.forEach(d=>console.warn(`[DIFERENCIA] ${d}`));
- await testInfo.attach('ui-api-comparison.json',{body:JSON.stringify({term,url,ui,api,comparison},null,2),contentType:'application/json'});
+ await testInfo.attach('ui-api-comparison.json',{body:JSON.stringify({term,url,ui,api:api.slice(0,10),comparison},null,2),contentType:'application/json'});
  expect(comparison.matches,comparison.discrepancies.join(' | ')).toBeGreaterThanOrEqual(3);
 });
