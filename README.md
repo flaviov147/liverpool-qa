@@ -6,28 +6,36 @@ Reto técnico: búsqueda `playstation 5` → color blanco → precio menor a may
 
 ## Requisitos e instalación
 
-Node.js 22+, npm, conexión a Liverpool y Chromium de Playwright.
+Node.js 22+, npm, conexión a Liverpool y los navegadores de Playwright.
 
 ```bash
 npm install
-npx playwright install chromium
+npx playwright install chromium firefox webkit
 npm run typecheck
-npm run test:unit
-npm test          # E2E headless (por defecto)
-npm run test:headed   # E2E con navegador visible
-npm run test:all      # unitarias + E2E
+npm run test:unit        # unitarias
+npm test                 # E2E headless en chromium + firefox + webkit (secuencial)
+npm run test:chromium    # E2E solo en chromium
+npm run test:visual      # regresión visual (baseline local)
+npm run test:all         # unitarias + E2E + visual
+npm run report           # abre el reporte HTML
 ```
 
-Modo visible: `npm run test:headed`. Reporte: `npm run report`. Búsqueda parametrizada: `SEARCH_TERM='nintendo switch' npm test` (macOS/Linux), `$env:SEARCH_TERM='nintendo switch'; npm test` (PowerShell). En Windows CMD: `set SEARCH_TERM=nintendo switch && npm test`.
+Modo visible: `npm run test:headed`. Búsqueda parametrizada: `SEARCH_TERM='nintendo switch' npm test` (macOS/Linux), `$env:SEARCH_TERM='nintendo switch'; npm test` (PowerShell). Presupuesto de carga de resultados: `LOAD_BUDGET_MS=30000 npm test`. Paralelismo (por defecto 1 para no disparar el anti-bot): `WORKERS=3 npm test`.
 
 ## Arquitectura
 
 - `src/pages/search.page.ts`: POM y selectores UI.
 - `src/services/search-response.ts`: adaptador de respuesta de catálogo y captura de respuestas de red.
 - `src/utils/products.ts`: normalización, parseo MXN y comparación.
-- `tests/search.spec.ts`: orquestación E2E y evidencia adjunta.
+- `tests/search.spec.ts`: orquestación E2E (búsqueda, filtro, orden, extracción UI, validación UI/API, accesibilidad y rendimiento) y evidencia adjunta.
+- `tests/search.visual.spec.ts`: regresión visual (`@visual`), local con snapshot con máscaras de precio/imágenes y `maxDiffPixelRatio`.
 - `tests/unit`: pruebas aisladas de las funciones críticas.
-- `.github/workflows/test.yml`: typecheck, unitarias, E2E headless y artefactos HTML.
+- `playwright.config.ts`: `channel: 'chromium'`, `locale: 'es-MX'` y proyectos `chromium`, `firefox`, `webkit`, `visual` y `unit`.
+- `.github/workflows/test.yml`: typecheck, unitarias, E2E en los tres navegadores y artefactos HTML.
+
+Además del E2E, la prueba incluye:
+- **Accesibilidad** con `@axe-core/playwright` (etiquetas WCAG 2 A/AA): adjunta `axe-violations.json` y registra las violaciones. Es **informativa**, no bloqueante: las 3 violaciones actuales (`button-name`, `color-contrast`, `label`) pertenecen al sitio de Liverpool, no a la automatización.
+- **Rendimiento**: asevera que la página de resultados queda lista bajo `LOAD_BUDGET_MS` (45 s por defecto).
 
 ## Reportes
 
@@ -35,13 +43,13 @@ Modo visible: `npm run test:headed`. Reporte: `npm run report`. Búsqueda parame
 
 ## Estado real y consideraciones
 
-Estado: **probado en local en modo headless** — E2E `1/1` (5/5 coincidencias UI/API) y unitarias `3/3`.
+Estado: **probado en local en modo headless** — E2E `3/3` (5/5 coincidencias UI/API en chromium, firefox y webkit), unitarias `3/3` y visual `1/1`.
 
 Los selectores y el esquema del servicio fueron verificados contra el sitio real (oct. 2026):
 
 - Endpoint de resultados interceptado: `POST https://www.liverpool.com.mx/api/plp/search` (`data.records`).
 - Tarjeta de producto: `section[data-testid$="-card"]`; nombre `h3`; precio `[data-testid$="-price"]`; filtro color `checkbox "Blanco (76)"`; orden `[data-testid="dropdown-sorting-button"]` → «Menor precio».
 
-**Nota de anti-bot (Akamai):** Liverpool devuelve `403 Access Denied` al headless clásico de Playwright (headless shell). Por eso `playwright.config.ts` usa `channel: 'chromium'` (nuevo modo headless), que sí carga el sitio. Si el sitio cambia o bloquea IP de datacenter, ajusta el POM/adaptador o apunta a un entorno QA autorizado.
+**Nota de anti-bot (Akamai):** Liverpool devuelve `403 Access Denied` al headless clásico de Playwright (headless shell). Por eso `playwright.config.ts` usa `channel: 'chromium'` (nuevo modo headless), que sí carga el sitio. El anti-bot también penaliza la concurrencia: los tres navegadores se ejecutan **en secuencia** (`workers: 1` por defecto) para mantener la fiabilidad; con `WORKERS=3` se paralelizan bajo tu responsabilidad. Si el sitio cambia o bloquea IP de datacenter, ajusta el POM/adaptador o apunta a un entorno QA autorizado.
 
 **GitHub Actions:** `https://github.com/flaviov147/liverpool-qa/actions`

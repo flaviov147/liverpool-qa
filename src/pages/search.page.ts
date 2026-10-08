@@ -6,14 +6,26 @@ export class SearchPage{
  private get cards():Locator{return this.page.locator('section[data-testid$="-card"]');}
  async open(){await this.page.goto('/',{waitUntil:'domcontentloaded'});}
  async search(term:string){
+  const results=/\/tienda(\/N-[^?]+)?\?s=/i;
   const input=this.page.getByPlaceholder(/Buscar por producto/i).first();
-  await expect(input,'Buscador Liverpool').toBeVisible();await input.fill(term);await input.press('Enter');
-  await expect(this.page,'Resultados de búsqueda').toHaveURL(/\/tienda(\/N-[^?]+)?\?s=/i);
+  await expect(input,'Buscador Liverpool').toBeVisible();
+  await input.click();
+  for(let attempt=0;attempt<3;attempt++){
+   await input.fill(term);
+   await expect(input).toHaveValue(term);
+   await input.press('Enter');
+   try{await this.page.waitForURL(results,{timeout:10000});return;}catch{ await this.page.waitForTimeout(1000); }
+  }
+  await this.page.waitForURL(results,{timeout:15000});
  }
  async filterWhite(){
-  const option=this.page.getByRole('checkbox',{name:/^blanco/i}).first();
-  await expect(option,'Filtro color Blanco').toBeVisible();
-  await option.click({force:true});
+  const checkbox=this.page.getByRole('checkbox',{name:/^blanco/i}).first();
+  await expect(checkbox,'Filtro color Blanco').toBeAttached();
+  const label=this.page.locator('label',{has:checkbox}).first();
+  const applied=this.page.waitForURL(/\/tienda\/N-/,{timeout:20000}).catch(()=>null);
+  await label.scrollIntoViewIfNeeded();
+  await label.click();
+  await applied;
   await expect(this.page,'Filtro aplicado').toHaveURL(/\/tienda\/N-/);
  }
  async sortLowToHigh(){
@@ -22,8 +34,9 @@ export class SearchPage{
   await this.page.getByText(/^menor precio$/i).click();
   await sorted;
  }
- async firstFive():Promise<Product[]>{
-  await expect(this.cards.first(),'Tarjetas de resultados').toBeVisible();
+  async waitForResults(){await expect(this.cards.first(),'Tarjetas de resultados').toBeVisible();}
+  async firstFive():Promise<Product[]>{
+   await this.waitForResults();
   await expect.poll(()=>this.cards.count()).toBeGreaterThanOrEqual(5);
   const raw=await this.cards.evaluateAll((cards)=>cards.slice(0,5).map((card)=>{
    const name=card.querySelector('h3')?.textContent?.trim()??'';
