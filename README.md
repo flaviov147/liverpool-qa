@@ -52,4 +52,4 @@ Los selectores y el esquema del servicio fueron verificados contra el sitio real
 
 **Nota de anti-bot (Akamai):** Liverpool devuelve `403 Access Denied` al headless clásico de Playwright (headless shell). Por eso `playwright.config.ts` usa `channel: 'chromium'` (nuevo modo headless), que sí carga el sitio. El anti-bot también penaliza la concurrencia: los tres navegadores se ejecutan **en secuencia** (`workers: 1` por defecto) para mantener la fiabilidad; con `WORKERS=3` se paralelizan bajo tu responsabilidad. Si el sitio cambia o bloquea IP de datacenter, ajusta el POM/adaptador o apunta a un entorno QA autorizado.
 
-**GitHub Actions:** `https://github.com/flaviov147/liverpool-qa/actions`
+**GitHub Actions:** `https://github.com/flaviov147/liverpool-qa/actions`. En CI, `typecheck` y las unitarias bloquean; el E2E en vivo es **informativo** (`continue-on-error`), porque los runners de GitHub usan IPs de datacenter que Akamai bloquea. La validación E2E real se ejecuta en local.
